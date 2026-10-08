@@ -33,6 +33,9 @@ def blurb(row):
     s = f"{op} filed under {cat}, {how}."
     if tags:
         s += " Noted in the title: " + ", ".join(tags) + "."
+    m = re.search(r"Scott\s+#([A-Za-z0-9][A-Za-z0-9\-]*)", row["title"])
+    if m:
+        s += f" Listed under Scott #{m.group(1)}."
     cond = row["condition"].strip()
     if cond:
         s += f" Condition: {cond}."
