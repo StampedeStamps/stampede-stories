@@ -20,8 +20,8 @@ class BuildTest(unittest.TestCase):
         cls.tmp.cleanup()
 
     def test_page_count(self):
-        self.assertEqual(len(self.rows), 427)
-        self.assertEqual(len(list((self.out / "item").glob("*.html"))), 427)
+        self.assertGreater(len(self.rows), 0)
+        self.assertEqual(len(list((self.out / "item").glob("*.html"))), len(self.rows))
 
     def test_each_page_links_to_ebay(self):
         for r in self.rows:
@@ -42,16 +42,20 @@ class BuildTest(unittest.TestCase):
         titles = {r["item"]: r["title"] for r in self.rows}
         with open(ROOT / "data/blurbs.csv", encoding="utf-8", newline="") as f:
             bl = list(csv.DictReader(f))
-        self.assertEqual(len(bl), 427)
         for b in bl:
             self.assertTrue(b["blurb"].strip())
             self.assertNotIn("$", b["blurb"].replace(titles[b["item"]], ""))
 
+    def test_no_empty_blurb_paragraph(self):
+        for r in self.rows:
+            txt = (self.out / "item" / f"{r['item']}.html").read_text(encoding="utf-8")
+            self.assertNotIn("<p></p>", txt, r["item"])
+
     def test_extras(self):
         for n in ("index.html", "feed.xml", "sitemap.xml", "robots.txt"):
             self.assertTrue((self.out / n).exists(), n)
-        self.assertEqual((self.out / "sitemap.xml").read_text().count("<url>"), 428)
-        self.assertEqual((self.out / "feed.xml").read_text().count("<item>"), 427)
+        self.assertEqual((self.out / "sitemap.xml").read_text().count("<url>"), len(self.rows) + 1)
+        self.assertEqual((self.out / "feed.xml").read_text().count("<item>"), len(self.rows))
 
 
 if __name__ == "__main__":

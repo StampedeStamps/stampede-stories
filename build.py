@@ -4,6 +4,9 @@ import csv, html, os, shutil, sys
 from collections import defaultdict
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent / "tools"))
+from make_blurbs import blurb as default_blurb  # fallback for listings with no row in blurbs.csv
+
 ROOT = Path(__file__).resolve().parent
 SITE_URL = os.environ.get("SITE_URL", "https://stampedestamps.github.io/stampede-stories").rstrip("/")
 STORE = "https://www.ebay.com/str/stampedeusa"
@@ -62,7 +65,7 @@ def main(out):
 
     for r in rows:
         it, t = r["item"], r["title"]
-        blurb = blurbs.get(it, "")
+        blurb = blurbs.get(it) or default_blurb(r)
         img = imgs.get(it)
         photo = f'<p><img class="photo" src="{e(img)}" alt="{e(t)}" loading="lazy"></p>' if img else ""
         meta = f'<p class="meta">Category: {e(r["category"])}'
@@ -101,7 +104,7 @@ var ok=!v||(l.textContent+' '+s.querySelector('h2').textContent).toLowerCase().i
     for r in rows:
         link = f"{SITE_URL}/item/{r['item']}.html"
         enc = f'<enclosure url="{e(imgs[r["item"]])}" type="image/jpeg" length="0"/>' if r["item"] in imgs else ""
-        desc = e(blurbs.get(r["item"], ""))
+        desc = e(blurbs.get(r["item"]) or default_blurb(r))
         items.append(f"<item><title>{e(r['title'])}</title><link>{link}</link><guid isPermaLink=\"true\">{link}</guid>"
                      f"<description>{desc}</description>{enc}</item>")
     (out / "feed.xml").write_text(
