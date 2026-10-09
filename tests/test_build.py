@@ -56,8 +56,76 @@ class BuildTest(unittest.TestCase):
     def test_extras(self):
         for n in ("index.html", "feed.xml", "sitemap.xml", "robots.txt"):
             self.assertTrue((self.out / n).exists(), n)
-        self.assertEqual((self.out / "sitemap.xml").read_text().count("<url>"), len(self.rows) + 1)
-        self.assertEqual((self.out / "feed.xml").read_text().count("<item>"), len(self.rows))
+        self.assertEqual((self.out / "sitemap.xml").read_text(encoding="utf-8").count("<url>"), len(self.rows) + 1)
+        self.assertEqual((self.out / "feed.xml").read_text(encoding="utf-8").count("<item>"), len(self.rows))
+
+    def test_404_page(self):
+        txt = (self.out / "404.html").read_text(encoding="utf-8")
+        self.assertIn("https://www.ebay.com/str/stampedeusa", txt)
+        self.assertIn("- StampedeUSA", txt)
+        self.assertIn(f'href="{build.SITE_URL}/index.html"', txt)
+
+    def test_blurbs_make_no_catalog_claims(self):
+        # The Scott number is already in the page heading verbatim; a blurb must never pick or repeat one.
+        for r in self.rows:
+            txt = (self.out / "item" / f"{r['item']}.html").read_text(encoding="utf-8")
+            body = txt.split("</h1>", 1)[1]
+            self.assertNotIn("Listed under Scott", body, r["item"])
+
+
+def write_csv(path, rows):
+    with open(path, "w", encoding="utf-8", newline="") as f:
+        csv.writer(f).writerows(rows)
+
+
+class RefreshTest(unittest.TestCase):
+    """A listings refresh from OMEN must never break the build or leave a stale claim on a page."""
+
+    HEAD = ["item", "title", "category", "condition", "format", "ebay_url"]
+
+    def build(self, listings, blurbs=None, bom=False):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        data = Path(tmp.name) / "data"
+        data.mkdir()
+        write_csv(data / "listings.csv", [self.HEAD] + listings)
+        if bom:
+            raw = (data / "listings.csv").read_bytes()
+            (data / "listings.csv").write_bytes(b"\xef\xbb\xbf" + raw)
+        if blurbs is not None:
+            write_csv(data / "blurbs.csv", [["item", "blurb"]] + blurbs)
+        out = Path(tmp.name) / "site"
+        build.main(out, data)
+        return out
+
+    def page(self, out, item):
+        return (out / "item" / f"{item}.html").read_text(encoding="utf-8")
+
+    def test_ended_new_retitled_and_recategorized(self):
+        out = self.build(
+            [["111", "Scott #1 Test Stamp Used", "Revenues", "", "FIXED_PRICE", "https://www.ebay.com/itm/111"],
+             ["222", "Brand New Listing $5 Face MNH", "Sheets", "", "AUCTION", "https://www.ebay.com/itm/222"]],
+            # Stale rows: 111 was retitled (old blurb says MNH) and moved from Sheets; 999 has ended.
+            [["111", "Old blurb filed under Sheets. Noted in the title: MNH."], ["999", "Ended listing blurb."]])
+        self.assertEqual(sorted(p.name for p in (out / "item").glob("*.html")), ["111.html", "222.html"])
+        p111 = self.page(out, "111")
+        self.assertNotIn("Old blurb", p111)
+        self.assertNotIn("MNH", p111)
+        self.assertIn("Revenues", p111)
+        self.assertIn("Noted in the title: used.", p111)
+        p222 = self.page(out, "222")
+        self.assertIn("Noted in the title: MNH.", p222)
+        self.assertNotIn("<p></p>", p222)
+
+    def test_no_blurbs_csv_and_bom(self):
+        out = self.build([["333", "Single Perfin Used", "Revenues", "", "AUCTION", "https://www.ebay.com/itm/333"]], bom=True)
+        p = self.page(out, "333")
+        self.assertIn("Noted in the title: used, perfin.", p)
+        self.assertNotIn("perfins", p)
+
+    def test_flat_plate_is_not_a_plate_tag(self):
+        out = self.build([["444", "Flat Plate Printing 2c MNH", "Sheets", "", "FIXED_PRICE", "https://www.ebay.com/itm/444"]])
+        self.assertIn("Noted in the title: MNH.", self.page(out, "444"))
 
 
 if __name__ == "__main__":
