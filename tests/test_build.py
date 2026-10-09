@@ -44,7 +44,9 @@ class BuildTest(unittest.TestCase):
             bl = list(csv.DictReader(f))
         for b in bl:
             self.assertTrue(b["blurb"].strip())
-            self.assertNotIn("$", b["blurb"].replace(titles[b["item"]], ""))
+            # A blurb can outlive its listing (the daily refresh drops ended items from listings.csv);
+            # such a leftover is never rendered, so it may not contain "$" at all.
+            self.assertNotIn("$", b["blurb"].replace(titles.get(b["item"], ""), ""))
 
     def test_no_empty_blurb_paragraph(self):
         for r in self.rows:
