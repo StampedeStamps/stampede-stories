@@ -22,10 +22,17 @@
    longer matches the item counts in headings; the filter is re-applied after the Back button; a 404 page
    points visitors back to the index and the eBay store.
 7. `tools/make_blurbs.py` works from any folder.
+8. A blank category reads "Other" everywhere (blurb, Category line, index heading), and a format other than
+   AUCTION / FIXED_PRICE gets no auction or buy-now wording at all instead of a guess.
+9. The "listed in <category>" wording is replaced ("part of our <category> selection"), because for categories
+   such as Victoria or Ukraine it read like a location.
 
 ## Checks run (cloud session, Fri 2026-10-09)
-- `python3 -m unittest discover -s tests`: 11 tests, OK. The new tests fail on d934503 (5 of 11), so they
-  catch the problems above.
+- `python3 -m unittest discover -s tests`: 12 tests, OK (Python 3.13; CI uses 3.12). The new tests fail on
+  d934503, so they catch the problems above.
+- Two rounds of independent review with adversarial verification (hard rules read against all 427 rows,
+  regressions, refresh robustness with BOM/CRLF/blank/odd-format/duplicate data, Windows). Every confirmed
+  finding is fixed here; findings the verifiers could not reproduce were dropped.
 - Built with the current `main` listings (427): 427 item pages plus index, 404, feed, sitemap, robots;
   0 HTML tag mismatches; feed.xml and sitemap.xml are well-formed XML; no "Listed under Scott" anywhere.
 - Headless Chromium: search shows 427 by default, "hologram" 4, "178" 2 (the two titles containing 178),

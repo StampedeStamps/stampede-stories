@@ -5,7 +5,7 @@ from collections import defaultdict
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent / "tools"))
-from make_blurbs import blurb, check as check_blurb  # blurbs are written fresh from each listing on every build
+from make_blurbs import blurb, category, check as check_blurb  # blurbs are written fresh on every build
 
 ROOT = Path(__file__).resolve().parent
 SITE_URL = os.environ.get("SITE_URL", "https://stampedestamps.github.io/stampede-stories").rstrip("/")
@@ -74,7 +74,7 @@ def main(out, data=None):
         text = blurbs[it]
         img = imgs.get(it)
         photo = f'<p><img class="photo" src="{e(img)}" alt="{e(t)}" loading="lazy"></p>' if img else ""
-        meta = f'<p class="meta">Category: {e(r["category"] or "Other")}'
+        meta = f'<p class="meta">Category: {e(category(r))}'
         if r.get("condition"):
             meta += f' &middot; Condition: {e(r["condition"])}'
         meta += "</p>"
@@ -86,7 +86,7 @@ def main(out, data=None):
 
     groups = defaultdict(list)
     for r in rows:
-        groups[r["category"] or "Other"].append(r)
+        groups[category(r)].append(r)
     secs = []
     for cat in sorted(groups, key=lambda c: (-len(groups[c]), c)):
         li = "".join(f'<li><a href="item/{r["item"]}.html">{e(r["title"])}</a></li>'

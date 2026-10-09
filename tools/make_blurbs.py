@@ -17,7 +17,7 @@ OPEN = [
     "Tweezers out, friends:", "Look what turned up:", "Part of the StampedeUSA herd:",
     "Here's one with a story to tell:",
 ]
-WHERE = ["filed under {cat}", "found in our {cat} section", "listed in {cat}", "on the {cat} shelf"]
+WHERE = ["filed under {cat}", "found in our {cat} section", "part of our {cat} selection", "on the {cat} shelf"]
 HOW = {"AUCTION": ["up for auction", "open for bids"], "FIXED_PRICE": ["ready to buy now", "available to buy now"]}
 CLOSE = [
     "Take a peek on eBay.", "Come see it on eBay.", "Have a look on eBay.", "It's waiting for you on eBay.",
@@ -34,15 +34,20 @@ NOTES = [  # (regex on title, phrase) -- phrase restates a word the title itself
 ]
 
 
+def category(row):
+    """The category as shown everywhere on the site; a blank one is filed under "Other"."""
+    return (row.get("category") or "").strip() or "Other"
+
+
 def blurb(row):
-    cat, fmt = row["category"].strip() or "our store", row["format"]
+    cat = category(row)
+    fmt = (row.get("format") or "").strip().upper()
     h = zlib.crc32(row["item"].encode())
     op, cl = OPEN[h % len(OPEN)], CLOSE[(h >> 8) % len(CLOSE)]
     where = WHERE[(h >> 16) % len(WHERE)].format(cat=cat)
-    hows = HOW.get(fmt, HOW["FIXED_PRICE"])
-    how = hows[(h >> 20) % len(hows)]
+    hows = HOW.get(fmt)  # an unknown format gets no auction/buy-now claim at all
     tags = [p for rx, p in NOTES if re.search(rx, row["title"], re.I)][:3]
-    s = f"{op} {where}, {how}."
+    s = f"{op} {where}, {hows[(h >> 20) % len(hows)]}." if hows else f"{op} {where}."
     if tags:
         s += " Noted in the title: " + ", ".join(tags) + "."
     cond = (row.get("condition") or "").strip()

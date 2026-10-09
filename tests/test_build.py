@@ -12,8 +12,7 @@ class BuildTest(unittest.TestCase):
         cls.tmp = tempfile.TemporaryDirectory()
         cls.out = Path(cls.tmp.name) / "site"
         build.main(cls.out)
-        with open(ROOT / "data/listings.csv", encoding="utf-8", newline="") as f:
-            cls.rows = list(csv.DictReader(f))
+        cls.rows = build.read(ROOT / "data", "listings.csv")
 
     @classmethod
     def tearDownClass(cls):
@@ -40,8 +39,10 @@ class BuildTest(unittest.TestCase):
 
     def test_blurbs_have_no_price(self):
         titles = {r["item"]: r["title"] for r in self.rows}
-        with open(ROOT / "data/blurbs.csv", encoding="utf-8", newline="") as f:
-            bl = list(csv.DictReader(f))
+        # data/blurbs.csv is a review snapshot the site does not read; check it only if it is there.
+        if not (ROOT / "data/blurbs.csv").exists():
+            self.skipTest("no data/blurbs.csv")
+        bl = build.read(ROOT / "data", "blurbs.csv")
         for b in bl:
             self.assertTrue(b["blurb"].strip())
             # A blurb can outlive its listing (the daily refresh drops ended items from listings.csv);
@@ -122,6 +123,22 @@ class RefreshTest(unittest.TestCase):
         p = self.page(out, "333")
         self.assertIn("Noted in the title: used, perfin.", p)
         self.assertNotIn("perfins", p)
+
+    def test_blank_category_and_odd_format(self):
+        out = self.build([["555", "Cover Used", "", "", "Auction", "https://www.ebay.com/itm/555"],
+                          ["666", "Card MNH", " ", "", "", "https://www.ebay.com/itm/666"]])
+        for item in ("555", "666"):
+            p = self.page(out, item)
+            self.assertIn("Category: Other", p)
+            self.assertNotIn("our our", p)
+            self.assertNotIn("the our ", p)
+        self.assertRegex(self.page(out, "555"), r"up for auction|open for bids")
+        p666 = self.page(out, "666")
+        self.assertNotIn("buy now", p666)
+        self.assertNotIn("auction", p666)
+        self.assertNotIn("bids", p666)
+        index = (out / "index.html").read_text(encoding="utf-8")
+        self.assertIn("<h2>Other (2)</h2>", index)
 
     def test_flat_plate_is_not_a_plate_tag(self):
         out = self.build([["444", "Flat Plate Printing 2c MNH", "Sheets", "", "FIXED_PRICE", "https://www.ebay.com/itm/444"]])
