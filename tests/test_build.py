@@ -60,6 +60,11 @@ class BuildTest(unittest.TestCase):
         self.assertEqual((self.out / "sitemap.xml").read_text(encoding="utf-8").count("<url>"), len(self.rows) + 1)
         self.assertEqual((self.out / "feed.xml").read_text(encoding="utf-8").count("<item>"), len(self.rows))
 
+    def test_google_verification_on_home_page(self):
+        # Search Console checks this tag on the home page; if it disappears the property is un-verified.
+        txt = (self.out / "index.html").read_text(encoding="utf-8")
+        self.assertIn('<meta name="google-site-verification" content="LLXJ-AdRojWsQOPVel5D4eVxu6o9vwAzJJ_nle-0bQ8">', txt)
+
     def test_404_page(self):
         txt = (self.out / "404.html").read_text(encoding="utf-8")
         self.assertIn("https://www.ebay.com/str/stampedeusa", txt)

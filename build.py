@@ -15,6 +15,9 @@ PURPLE = "#4B006E"
 SIGN = "- StampedeUSA"
 SITE_NAME = "Stamp Stories"
 OG_DEFAULT = "assets/og-stamp-stories.png"  # 1200x630, made once by tools/make_og_image.js, never at build time
+# Google Search Console ownership proof for the URL-prefix property https://stampedestamps.github.io/stampede-stories/
+# (Douglas, Sun 2026-10-11 "go traffic"). Removing it un-verifies the site, so tests/test_build.py checks it stays.
+GOOGLE_SITE_VERIFICATION = "LLXJ-AdRojWsQOPVel5D4eVxu6o9vwAzJJ_nle-0bQ8"
 FONT = "assets/fonts/league-gothic-latin-400-normal.woff2"
 DECADE_MIN = 30  # a category this big gets decade sub-headings, taken only from a year the title itself states
 FORMATS = {"FIXED_PRICE": "Buy It Now", "AUCTION": "Auction"}
@@ -87,6 +90,7 @@ def page(title, desc, body, canon, depth=0, base=None, image=None, extra_head=""
 <meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="{e(title)}">
 <meta name="twitter:description" content="{e(desc)}"><meta name="twitter:image" content="{e(img)}">
 <meta name="theme-color" content="{PURPLE}">
+<meta name="google-site-verification" content="{GOOGLE_SITE_VERIFICATION}">
 <link rel="icon" href="{pre}assets/favicon.svg" type="image/svg+xml">
 <link rel="preload" href="{pre}{FONT}" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="{pre}assets/site.css">
