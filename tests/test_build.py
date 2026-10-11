@@ -65,6 +65,13 @@ class BuildTest(unittest.TestCase):
         txt = (self.out / "index.html").read_text(encoding="utf-8")
         self.assertIn('<meta name="google-site-verification" content="LLXJ-AdRojWsQOPVel5D4eVxu6o9vwAzJJ_nle-0bQ8">', txt)
 
+    def test_sitemap_hosts_are_lowercase(self):
+        # Search Console's property is https://stampedestamps.github.io/stampede-stories/ (lowercase host).
+        locs = re.findall(r"<loc>([^<]+)</loc>", (self.out / "sitemap.xml").read_text(encoding="utf-8"))
+        self.assertTrue(locs)
+        for loc in locs:
+            self.assertTrue(loc.startswith("https://stampedestamps.github.io/stampede-stories/"), loc)
+
     def test_404_page(self):
         txt = (self.out / "404.html").read_text(encoding="utf-8")
         self.assertIn("https://www.ebay.com/str/stampedeusa", txt)

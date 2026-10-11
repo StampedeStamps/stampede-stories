@@ -10,6 +10,11 @@ from make_blurbs import blurb, category, check as check_blurb  # blurbs are writ
 
 ROOT = Path(__file__).resolve().parent
 SITE_URL = os.environ.get("SITE_URL", "https://stampedestamps.github.io/stampede-stories").rstrip("/")
+# The workflow builds SITE_URL from the account name "StampedeStamps"; hosts are case-insensitive, but the address
+# Google Search Console verified is all lowercase, so every canonical, sitemap and feed link uses a lowercase host.
+_scheme, _, _rest = SITE_URL.partition("://")
+_host, _slash, _path = _rest.partition("/")
+SITE_URL = f"{_scheme}://{_host.lower()}{_slash}{_path}"
 STORE = "https://www.ebay.com/str/stampedeusa"
 PURPLE = "#4B006E"
 SIGN = "- StampedeUSA"
