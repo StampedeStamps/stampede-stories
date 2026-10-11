@@ -2,7 +2,7 @@ name: Build and deploy Stamp Stories
 on:
   push:
     branches: [main]
-    paths: ["data/**", "build.py", "tests/**", ".github/workflows/pages.yml"]
+    paths: ["data/**", "build.py", "tools/**", "tests/**", ".github/workflows/pages.yml"]
   workflow_dispatch:
 permissions:
   contents: read
