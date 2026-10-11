@@ -109,7 +109,7 @@ main{display:block;max-width:72rem;margin:0 auto;padding:1.5rem 1rem 3rem}
   .pane{grid-template-columns:repeat(3,minmax(0,1fr));padding:16px 48px 16px 16px}
   .pane li.rest:nth-child(odd){grid-column:auto}
   .pane .inscription{width:48px}
-  .decade{display:grid;grid-template-columns:6.5rem 1fr;gap:1rem;border-top:1px solid var(--rule);padding-top:.6rem}
+  .decade{display:grid;grid-template-columns:6.5rem 1fr;gap:1rem;padding-top:.6rem}
   .decade h3{padding-top:.45rem}
   .decade .rows{margin:0}
 }
