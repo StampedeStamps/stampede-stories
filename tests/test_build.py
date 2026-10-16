@@ -1,5 +1,6 @@
-import csv, html, re, sys, tempfile, unittest
+import csv, html, io, re, sys, tempfile, unittest
 from pathlib import Path
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
@@ -155,6 +156,62 @@ class RefreshTest(unittest.TestCase):
     def test_flat_plate_is_not_a_plate_tag(self):
         out = self.build([["444", "Flat Plate Printing 2c MNH", "Sheets", "", "FIXED_PRICE", "https://www.ebay.com/itm/444"]])
         self.assertIn("Noted in the title: MNH.", self.page(out, "444"))
+
+
+class StoreLinkTest(unittest.TestCase):
+    """ONE catalog (Douglas 2026-10-11, ruling D1): an item page whose listing has a page on www.stampedestamps.store
+    names that page as its canonical, links shoppers to it, and leaves the sitemap; the rest stay as they were."""
+
+    def build(self, store):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        data = Path(tmp.name) / "data"
+        data.mkdir()
+        write_csv(data / "listings.csv", [RefreshTest.HEAD,
+                  ["111", "Scott #1 Test Stamp Used", "Revenues", "", "FIXED_PRICE", "https://www.ebay.com/itm/111"],
+                  ["222", "Scott #2 Test Sheet MNH", "Sheets", "", "AUCTION", "https://www.ebay.com/itm/222"],
+                  ["333", "Scott #3 Test Cover Used", "Postal History", "", "AUCTION", "https://www.ebay.com/itm/333"]])
+        out = Path(tmp.name) / "site"
+        build.main(out, data, store=store)
+        return {i: (out / "item" / f"{i}.html").read_text(encoding="utf-8") for i in ("111", "222", "333")}, \
+            (out / "sitemap.xml").read_text(encoding="utf-8")
+
+    def test_store_page_is_canonical_linked_and_out_of_the_sitemap(self):
+        pages, sitemap = self.build({"111": True, "222": False})        # 333 has no store page yet
+        for i in ("111", "222"):
+            shop = f"{build.STORE_SITE}/catalog/item/{i}.html"
+            self.assertIn(f'<link rel="canonical" href="{shop}">', pages[i])
+            self.assertIn(f'<meta property="og:url" content="{shop}">', pages[i])
+            self.assertIn(f'<a href="{shop}">See it ', pages[i])
+            self.assertIn(f'"url":"{shop}"', pages[i])                           # Product structured data
+            self.assertIn(f'"item":"{build.SITE_URL}/item/{i}.html"', pages[i])   # the breadcrumb stays on this site
+        self.assertIn("See it with its photo at stampedestamps.store", pages["111"])
+        self.assertIn("See it at stampedestamps.store", pages["222"])           # never promise a photo it lacks
+        self.assertIn(f'<link rel="canonical" href="{build.SITE_URL}/item/333.html">', pages["333"])
+        self.assertNotIn("stampedestamps.store", pages["333"])
+        self.assertEqual(re.findall(r"/item/(\d+)\.html</loc>", sitemap), ["333"])
+        self.assertIn(f"<loc>{build.SITE_URL}/index.html</loc>", sitemap)
+
+    def test_without_the_store_every_page_stays_canonical_to_itself(self):
+        pages, sitemap = self.build({})
+        for i, txt in pages.items():
+            self.assertIn(f'<link rel="canonical" href="{build.SITE_URL}/item/{i}.html">', txt)
+            self.assertNotIn("stampedestamps.store", txt)
+        self.assertEqual(sitemap.count("<url>"), 4)
+
+    def test_store_pages_reads_the_store_and_fails_safe(self):
+        sitemap = ("<urlset><url><loc>https://www.stampedestamps.store/catalog/item/111.html</loc></url>"
+                   "<url><loc>https://www.stampedestamps.store/catalog/item/222.html</loc></url>"
+                   "<url><loc>https://www.stampedestamps.store/catalog/</loc></url></urlset>")
+        photos = "item,image\n111,images/catalog/111.jpg\n"
+
+        def reply(req, timeout):
+            body = sitemap if req.full_url.endswith("/sitemap.xml") else photos
+            return io.BytesIO(body.encode("utf-8"))      # BytesIO works as a context manager, like a real response
+        with mock.patch.object(build.urllib.request, "urlopen", side_effect=reply):
+            self.assertEqual(build.store_pages(), {"111": True, "222": False})
+        with mock.patch.object(build.urllib.request, "urlopen", side_effect=OSError("offline")):
+            self.assertEqual(build.store_pages(), {})
 
 
 if __name__ == "__main__":

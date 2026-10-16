@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Stamp Stories static site builder (stdlib only). Usage: build.py [outdir]"""
-import csv, datetime, html, json, os, re, shutil, sys
+import csv, datetime, html, io, json, os, re, shutil, sys, urllib.request
 from collections import defaultdict
 from pathlib import Path
 from urllib.parse import urlparse
@@ -16,6 +16,9 @@ _scheme, _, _rest = SITE_URL.partition("://")
 _host, _slash, _path = _rest.partition("/")
 SITE_URL = f"{_scheme}://{_host.lower()}{_slash}{_path}"
 STORE = "https://www.ebay.com/str/stampedeusa"
+# ONE catalog on the store's own site (Douglas, Sun 2026-10-11, ruling D1; done Fri 2026-10-16): an item page whose
+# listing has a page on www.stampedestamps.store names that page as its canonical and links shoppers to it.
+STORE_SITE = "https://www.stampedestamps.store"
 PURPLE = "#4B006E"
 SIGN = "- StampedeUSA"
 SITE_NAME = "Stamp Stories"
@@ -128,9 +131,32 @@ def load_stories(data, rows):
     return out
 
 
-def main(out, data=None):
+def store_pages(timeout=20):
+    """{item: True when its store page shows a photo} for every listing with a page on www.stampedestamps.store,
+    read from the store's public sitemap and photo list. {} when the store cannot be read: every item page then stays
+    canonical to itself, so no page ever points at a store page that does not exist. The store refresh runs after
+    ours (3:45 vs 3:30 AM ET), so a brand-new listing gets its store link at the next build."""
+    def get(path):
+        req = urllib.request.Request(STORE_SITE + path, headers={"User-Agent": "StampStories-build"})
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            return r.read().decode("utf-8")
+    try:
+        pages = set(re.findall(r"/catalog/item/(\d+)\.html</loc>", get("/sitemap.xml")))
+    except Exception as ex:  # noqa: BLE001 - any failure means "no store links this build", never a failed build
+        print(f"store pages not read ({type(ex).__name__}); every item page stays canonical to itself")
+        return {}
+    try:
+        photos = {r["item"] for r in csv.DictReader(io.StringIO(get("/data/catalog_images.csv")))}
+    except Exception:  # noqa: BLE001 - without the photo list the link just does not promise a photo
+        photos = set()
+    return {it: it in photos for it in pages}
+
+
+def main(out, data=None, store=None):
+    """store: {item: has a photo} from store_pages(); None or {} builds every item page canonical to itself."""
     data = Path(data) if data else ROOT / "data"
     out = Path(out)
+    store = store or {}
     if out.exists():
         shutil.rmtree(out)
     (out / "item").mkdir(parents=True)
@@ -192,12 +218,16 @@ def main(out, data=None):
         related = (f'<section class="related"><h2>More from {e(cat)}</h2><ul>'
                    + "".join(f'<li><a href="{x["item"]}.html">{e(x["title"])}</a></li>' for x in rel)
                    + "</ul></section>") if rel else ""
+        own = f"{SITE_URL}/item/{it}.html"
+        shop = f"{STORE_SITE}/catalog/item/{it}.html" if it in store else ""
+        canon = shop or own
+        store_link = (f'<p class="store-link"><a href="{shop}">See it {"with its photo " if store[it] else ""}'
+                      f'at stampedestamps.store</a></p>') if shop else ""
         body = (f'<nav class="crumbs" aria-label="Breadcrumb"><a href="../index.html">{SITE_NAME}</a> / '
                 f'<a href="../index.html#{slug(cat)}">{e(cat)}</a></nav>'
                 f'{stamp}<p class="facts">{"".join(facts)}</p>{text}'
-                f'<a class="btn" href="{e(r["ebay_url"])}" rel="nofollow noopener">See it on eBay</a>'
+                f'<a class="btn" href="{e(r["ebay_url"])}" rel="nofollow noopener">See it on eBay</a>{store_link}'
                 f'<p><a href="{STORE}">Browse everything in the StampedeUSA store</a></p>{related}')
-        canon = f"{SITE_URL}/item/{it}.html"
         product = {"@context": "https://schema.org", "@type": "Product", "name": t, "url": canon, "category": cat,
                    "description": text_of[it], "brand": {"@type": "Brand", "name": "StampedeUSA"}}
         if img:
@@ -205,7 +235,7 @@ def main(out, data=None):
         crumbs = {"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
             {"@type": "ListItem", "position": 1, "name": SITE_NAME, "item": f"{SITE_URL}/index.html"},
             {"@type": "ListItem", "position": 2, "name": cat, "item": f"{SITE_URL}/index.html#{slug(cat)}"},
-            {"@type": "ListItem", "position": 3, "name": t, "item": canon}]}
+            {"@type": "ListItem", "position": 3, "name": t, "item": own}]}
         (out / "item" / f"{it}.html").write_text(
             page(f"{t}{nth} | {SITE_NAME}", clip(f"{t}{nth}. {text_of[it]}"), body, canon, 1, image=img,
                  extra_head=jsonld(crumbs) + jsonld(product), narrow=True), encoding="utf-8")
@@ -327,7 +357,8 @@ if(m)q.value=decodeURIComponent(m[1].replace(/\\+/g,' '));}run(false);});})();
         f"<language>en-us</language><lastBuildDate>{now}</lastBuildDate>"
         f"<image><url>{SITE_URL}/{OG_DEFAULT}</url><title>{SITE_NAME}</title><link>{SITE_URL}/index.html</link></image>"
         + "".join(items) + "</channel></rss>\n", encoding="utf-8")
-    urls = [f"{SITE_URL}/index.html"] + [f"{SITE_URL}/item/{r['item']}.html" for r in rows]
+    # Only canonical pages belong in a sitemap: an item page that names its store page as canonical is left out.
+    urls = [f"{SITE_URL}/index.html"] + [f"{SITE_URL}/item/{r['item']}.html" for r in rows if r["item"] not in store]
     (out / "sitemap.xml").write_text(
         '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
         + "".join(f"<url><loc>{u}</loc><lastmod>{lastmod}</lastmod></url>" for u in urls) + "</urlset>\n",
@@ -347,4 +378,5 @@ if(m)q.value=decodeURIComponent(m[1].replace(/\\+/g,' '));}run(false);});})();
 
 
 if __name__ == "__main__":
-    main(sys.argv[1] if len(sys.argv) > 1 else ROOT / "site")
+    # Only the real build reads the live store; tests call main() with their own `store` and stay offline.
+    main(sys.argv[1] if len(sys.argv) > 1 else ROOT / "site", store=store_pages())
