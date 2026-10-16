@@ -1,5 +1,6 @@
 /* Stamp Stories. Light theme = album page, dark theme = stockbook. Royal purple #4B006E is the signature.
-   Perforation (.perf) is the one bold device: hero pane, featured stamps and the item stamp only. */
+   The one bold device is the cover on the home page: today's story arrives as airmail, and a purple postmark
+   strikes its stamp once as the page opens. Perforation (.perf) marks every stamp; everything else stays quiet. */
 @font-face{font-family:"League Gothic";font-style:normal;font-weight:400;font-display:swap;
   src:url(fonts/league-gothic-latin-400-normal.woff2) format("woff2")}
 
@@ -7,6 +8,7 @@
   --purple:#4B006E;--lilac:#D7B8F0;--page:#F6F4FA;--grid:#E7E2EF;--paper:#FFFFFF;--ink:#1F1D2B;
   --cancel:#B3261E;--soft:#5B566A;--link:var(--purple);--head:var(--purple);--strip:transparent;
   --edge:rgba(75,0,110,.55);--rule:#DCD5E6;
+  --envelope:#FFFDF8;--chev-1:var(--purple);--chev-2:#B48BD6;--pm:rgba(75,0,110,.86);
   --gothic:"League Gothic","Oswald","Arial Narrow",Impact,sans-serif;
   --serif:Charter,"Bitstream Charter","Sitka Text",Cambria,Georgia,serif;
   color-scheme:light dark;
@@ -14,6 +16,7 @@
 @media (prefers-color-scheme:dark){:root{
   --page:#1C1A22;--grid:transparent;--paper:#2A2732;--ink:#ECE8F3;--cancel:#FF8A80;--soft:#B9B2C6;
   --link:var(--lilac);--head:var(--lilac);--strip:rgba(255,255,255,.045);--edge:rgba(215,184,240,.5);--rule:#3A3644;
+  --envelope:#2E2A37;--chev-1:#9D6CC4;--chev-2:var(--lilac);--pm:rgba(215,184,240,.9);
 }}
 
 *{box-sizing:border-box}
@@ -36,10 +39,11 @@ h1,h2,h3{font-family:var(--gothic);font-weight:400;letter-spacing:.01em;line-hei
   max-width:72rem;margin:0 auto;padding:.7rem 1rem}
 .mark{font-family:var(--gothic);font-size:2rem;line-height:1;text-decoration:none;letter-spacing:.02em}
 .mark small{font-family:var(--serif);font-size:.95rem;letter-spacing:0;opacity:.92;margin-left:.45rem}
-.top .store{font-size:.95rem}
+.links{display:flex;flex-wrap:wrap;gap:.2rem 1.3rem;font-size:.95rem}
 
-main{display:block;max-width:72rem;margin:0 auto;padding:1.5rem 1rem 3rem}
+main{display:block;max-width:72rem;margin:0 auto;padding:1.5rem 1rem 3rem;overflow-x:clip}
 .narrow{max-width:44rem}
+main.story-page{max-width:66rem}
 
 /* Perforated stamp paper. The mask lives on ::before so focus rings are never clipped. */
 .perf{position:relative;isolation:isolate;--r:5px}
@@ -50,26 +54,85 @@ main{display:block;max-width:72rem;margin:0 auto;padding:1.5rem 1rem 3rem}
     linear-gradient(#000 0 0) no-repeat 50%/calc(100% - 3*var(--r)) calc(100% - 3*var(--r))}
 .edged{filter:drop-shadow(0 0 1px var(--edge))}
 
-/* Home hero: a pane of stamps on a purple sheet margin, one stamp per category */
-.hero h1{font-size:clamp(2.6rem,9vw,4.4rem)}
-.hero .lede{font-size:1.15rem;max-width:40rem;margin:.6rem 0 1.25rem}
-.pane{position:relative;background:var(--purple);padding:14px 40px 14px 14px;display:grid;
-  grid-template-columns:repeat(2,minmax(0,1fr));list-style:none;margin:0}
-.pane li{display:flex}
-.pane li.rest:nth-child(odd){grid-column:1/-1}
-.tile{flex:1;display:flex;flex-direction:column;justify-content:space-between;gap:.5rem;min-height:7.2rem;
-  padding:1.1rem 1.05rem 1rem;text-decoration:none;color:var(--purple)}
-.tile b{font-family:var(--gothic);font-weight:400;font-size:1.65rem;line-height:1.02}
-.tile span{font-size:.95rem;color:var(--soft)}
-.tile:hover b{text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:.12em}
-.tile:focus-visible{outline-offset:-9px}
-.pane .inscription{position:absolute;right:0;top:0;bottom:0;width:40px;display:flex;align-items:center;
-  justify-content:center;writing-mode:vertical-rl;color:#fff;font-size:.8rem;opacity:.9;margin:0}
-@media (prefers-color-scheme:dark){.tile{color:var(--lilac)}}
+/* A stamp: its photo, or a printed stamp made only from the title (its figure and its category) */
+.stamp{display:block;--r:4px;padding:9px}
+.stamp img{display:block;width:100%;height:100%;object-fit:cover}
+.type-stamp .frame{display:flex;flex-direction:column;align-items:center;height:100%;border:2px solid var(--purple);
+  text-align:center;color:var(--purple);background:color-mix(in srgb,var(--lilac) 24%,var(--paper))}
+.type-stamp .face{font-family:var(--gothic);font-size:2.7rem;line-height:1;margin:auto 0;padding:0 .2rem}
+.type-stamp .face.long{font-size:2rem}
+.type-stamp .ins{align-self:stretch;background:var(--purple);color:#fff;font-size:.68rem;line-height:1.2;padding:.22rem .3rem}
+@media (prefers-color-scheme:dark){
+  .type-stamp .frame{border-color:var(--lilac);color:var(--lilac);background:color-mix(in srgb,var(--lilac) 10%,var(--paper))}
+  .type-stamp .ins{background:var(--lilac);color:#1C1A22}
+}
+
+/* Postmark: ring on the envelope, killer bars across the stamp */
+.postmark{position:absolute;z-index:2;width:10rem;left:-6.1rem;top:2.1rem;color:var(--pm);pointer-events:none;
+  transform:rotate(-9deg);mix-blend-mode:multiply}
+.postmark .ring{font-family:var(--gothic);font-size:14.5px;letter-spacing:1.5px;fill:currentColor}
+.postmark .date{font-family:var(--gothic);font-size:17px;letter-spacing:.6px;fill:currentColor}
+@media (prefers-color-scheme:dark){.postmark{mix-blend-mode:normal}}
+@media (prefers-reduced-motion:no-preference){.postmark{animation:strike .5s cubic-bezier(.2,.9,.3,1.2) .35s both}}
+@keyframes strike{0%{opacity:0;transform:scale(1.5) rotate(-18deg)}100%{opacity:1;transform:scale(1) rotate(-9deg)}}
+
+/* Home hero: the promise, and today's story as a piece of airmail */
+.hero{margin:.3rem 0 0}
+.hero h1{font-size:clamp(3rem,11vw,5.4rem);line-height:.9}
+.hero .lede{font-size:1.15rem;max-width:36rem;margin:.85rem 0 1rem}
+.jump{display:flex;flex-wrap:wrap;gap:.3rem 1.4rem;margin:0}
+.hero.with-cover{display:grid;gap:2.2rem}
+@media (min-width:60rem){.hero.with-cover{grid-template-columns:minmax(0,4fr) minmax(0,6fr);gap:3.2rem;align-items:center}}
+
+.cover{position:relative;display:grid;grid-template-columns:1fr auto;grid-template-areas:"from corner" "to to";
+  gap:.4rem 1rem;padding:1.2rem 1.4rem 1.6rem;background:var(--envelope);border:11px solid transparent;
+  border-image:repeating-linear-gradient(-45deg,var(--chev-1) 0 16px,var(--envelope) 16px 24px,
+    var(--chev-2) 24px 40px,var(--envelope) 40px 48px) 11;
+  box-shadow:0 24px 34px -26px rgba(31,29,43,.6)}
+.cover .from{grid-area:from;margin:0;font-size:.85rem;line-height:1.35;color:var(--soft)}
+.cover .corner{grid-area:corner;position:relative;justify-self:end}
+.cover .stamp.small{width:7.6rem;transform:rotate(2.5deg)}
+.cover .stamp.small img,.cover .type-stamp.small .frame{height:6.6rem}
+.cover .to{grid-area:to;padding:1.3rem 0 0 clamp(0rem,9%,4.5rem)}
+.cover .label{margin:0 0 .3rem;font-style:italic;color:var(--soft)}
+.cover h2{font-size:clamp(2.4rem,7vw,3.6rem);line-height:.95}
+.cover .hook{font-size:1.12rem;line-height:1.5;max-width:34ch;margin:.6rem 0 1.15rem}
+
+/* Buttons */
+.btn{display:block;text-align:center;background:var(--purple);color:#fff;font-family:var(--gothic);font-size:1.9rem;
+  letter-spacing:.03em;line-height:1;padding:1.05rem 1rem;margin:1.6rem 0 .9rem;text-decoration:none;border-radius:4px;
+  border:2px solid var(--purple)}
+.btn.small{display:inline-block;font-size:1.5rem;padding:.75rem 1.7rem;margin:0}
+@media (prefers-color-scheme:dark){.btn{border-color:var(--lilac)}}
+@media (prefers-reduced-motion:no-preference){.btn{transition:transform .08s ease-out}.btn:active{transform:translateY(1px)}}
+@media (min-width:44rem){.btn{display:inline-block;padding:1.05rem 3.2rem}.btn.small{padding:.75rem 1.7rem}}
+
+/* Stories worth a read: stamps mounted on the album page, each with its write-up underneath */
+.featured{margin:3.2rem 0 1rem;scroll-margin-top:1rem}
+.featured h2,.cat>h2{font-size:2.3rem}
+.stories{list-style:none;padding:0;margin:1.3rem 0 0;display:grid;gap:1.8rem 1.5rem;
+  grid-template-columns:repeat(auto-fill,minmax(14.5rem,1fr))}
+.story-card a{display:flex;flex-direction:column;gap:.5rem;height:100%;text-decoration:none;color:var(--ink)}
+.story-card .stamp{width:9.6rem;margin:0 0 .4rem}
+.story-card .stamp img,.story-card .type-stamp .frame{height:8rem}
+.story-card .h{font-family:var(--gothic);font-size:1.8rem;line-height:1.02;color:var(--head)}
+.story-card .k{font-size:1rem;line-height:1.5}
+.story-card .c{font-size:.9rem;color:var(--soft);margin-top:auto}
+.story-card a:hover .h{text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:.12em}
+.story-card a:focus-visible{outline-offset:6px}
+@media (max-width:40rem){
+  .stories{grid-template-columns:1fr;gap:1.4rem}
+  .story-card a{display:grid;grid-template-columns:6.8rem minmax(0,1fr);grid-template-areas:"s h" "s k" "s c";
+    column-gap:1rem;row-gap:.3rem;align-items:start}
+  .story-card .stamp{grid-area:s;width:6.8rem;margin:0}
+  .story-card .stamp img,.story-card .type-stamp .frame{height:5.8rem}
+  .story-card .type-stamp .face{font-size:2.2rem}
+  .story-card .h{grid-area:h;font-size:1.6rem}.story-card .k{grid-area:k}.story-card .c{grid-area:c}
+}
 
 /* Search */
-.find{margin:2rem 0 .5rem}
-.find label{display:block;font-family:var(--gothic);font-size:1.6rem;color:var(--head)}
+.find{margin:2.4rem 0 .5rem;scroll-margin-top:1rem}
+.find label{display:block;font-family:var(--gothic);font-size:1.8rem;color:var(--head)}
 .find input{width:100%;font:inherit;font-size:1.1rem;padding:.75rem .9rem;margin:.35rem 0;color:var(--ink);
   background:var(--paper);border:2px solid var(--purple);border-radius:3px}
 @media (prefers-color-scheme:dark){.find input{border-color:var(--lilac)}}
@@ -78,16 +141,20 @@ main{display:block;max-width:72rem;margin:0 auto;padding:1.5rem 1rem 3rem}
 .empty p{margin:.2rem 0}
 .empty button{font:inherit;color:var(--link);background:none;border:0;padding:0;text-decoration:underline;cursor:pointer}
 
-/* Featured stamps */
-.featured{margin:2.4rem 0 1rem}
-.featured h2,.cat>h2{font-size:2.3rem}
-.stamps{list-style:none;padding:0;margin:1rem 0 0;display:grid;gap:1.1rem;grid-template-columns:repeat(auto-fill,minmax(10.5rem,1fr))}
-.stamps li{display:flex}
-.stamps a{flex:1;display:flex;flex-direction:column;gap:.6rem;padding:1.15rem 1.1rem 1rem;text-decoration:none;color:var(--ink)}
-.stamps .t{font-family:var(--gothic);font-size:1.3rem;line-height:1.1;color:var(--head)}
-.stamps .c{font-size:.9rem;color:var(--soft);margin-top:auto}
-.stamps img{width:100%;height:9rem;object-fit:contain}
-.stamps a:hover .t{text-decoration:underline;text-decoration-thickness:1px}
+/* Category pane: one stamp per category on a purple sheet margin */
+.pane{position:relative;background:var(--purple);padding:14px 40px 14px 14px;display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));list-style:none;margin:1.4rem 0 0}
+.pane li{display:flex}
+.pane li.rest:nth-child(odd){grid-column:1/-1}
+.tile{flex:1;display:flex;flex-direction:column;justify-content:space-between;gap:.5rem;min-height:6.6rem;
+  padding:1.05rem 1.05rem .95rem;text-decoration:none;color:var(--purple)}
+.tile b{font-family:var(--gothic);font-weight:400;font-size:1.6rem;line-height:1.02}
+.tile span{font-size:.95rem;color:var(--soft)}
+.tile:hover b{text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:.12em}
+.tile:focus-visible{outline-offset:-9px}
+.pane .inscription{position:absolute;right:0;top:0;bottom:0;width:40px;display:flex;align-items:center;
+  justify-content:center;writing-mode:vertical-rl;color:#fff;font-size:.8rem;opacity:.9;margin:0}
+@media (prefers-color-scheme:dark){.tile{color:var(--lilac)}}
 
 /* Category sections and album rows */
 .cat{margin:2.8rem 0 0;scroll-margin-top:1rem}
@@ -114,7 +181,6 @@ main{display:block;max-width:72rem;margin:0 auto;padding:1.5rem 1rem 3rem}
   .decade .rows{margin:0}
 }
 
-
 /* Item page */
 .crumbs{font-size:.95rem;color:var(--soft);margin:0 0 1.2rem}
 .crumbs a{color:var(--soft)}
@@ -128,18 +194,43 @@ main{display:block;max-width:72rem;margin:0 auto;padding:1.5rem 1rem 3rem}
 .text{font-size:1.15rem;line-height:1.65;max-width:62ch}
 .source{font-size:.92rem;color:var(--soft)}
 .source a{color:var(--soft)}
-.btn{display:block;text-align:center;background:var(--purple);color:#fff;font-family:var(--gothic);font-size:1.9rem;
-  letter-spacing:.03em;line-height:1;padding:1.05rem 1rem;margin:1.6rem 0 .9rem;text-decoration:none;border-radius:4px;
-  border:2px solid var(--purple)}
-@media (prefers-color-scheme:dark){.btn{border-color:var(--lilac)}}
-@media (prefers-reduced-motion:no-preference){.btn{transition:transform .08s ease-out}.btn:active{transform:translateY(1px)}}
-.related{margin:2.6rem 0 0}
-.related h2{font-size:1.9rem;margin:0 0 .3rem}
-.related ul{padding-left:1.1rem;margin:.3rem 0}
-.related li{margin:.4rem 0}
+.store-link{margin:.1rem 0 .7rem}
+
+/* Story page: the stamp, cancelled, beside its story */
+.story{display:grid;gap:1.6rem;margin-top:.3rem}
+.story-stamp{position:relative;justify-self:center;margin:0 0 1.4rem}
+.stamp.big{width:min(19rem,70vw);--r:6px;padding:12px}
+.stamp.photo.big img{height:auto;max-height:24rem;object-fit:contain}
+.type-stamp.big .frame{height:15rem}
+.type-stamp.big .face{font-size:5.6rem}
+.type-stamp.big .face.long{font-size:3.8rem}
+.type-stamp.big .ins{font-size:1rem;padding:.35rem .5rem}
+.story-stamp .postmark{width:12rem;left:-1.9rem;top:auto;bottom:-1.8rem}
+.headline{font-size:clamp(2.8rem,8.5vw,4.5rem);line-height:.92}
+.listing-title{margin:.75rem 0 .35rem;color:var(--soft);font-size:.98rem;line-height:1.45}
+.standfirst{font-size:1.3rem;line-height:1.5;margin:1.1rem 0 .9rem;max-width:40ch}
+.story-text p{font-size:1.15rem;line-height:1.7;max-width:62ch;margin:0 0 1rem}
+.story-text p:first-child::first-letter{float:left;font-family:var(--gothic);font-size:4.5em;line-height:.8;
+  margin:.07em .1em 0 0;color:var(--head)}
+.fact{max-width:62ch;margin:1.4rem 0;padding:1rem 1.2rem 1.05rem;background:var(--paper);border-top:4px solid var(--purple);
+  filter:drop-shadow(0 0 1px var(--edge))}
+@media (prefers-color-scheme:dark){.fact{border-color:var(--lilac)}}
+.fact h2{font-size:1.65rem;margin:0 0 .25rem}
+.fact p{margin:0;line-height:1.6}
+.share{display:flex;flex-wrap:wrap;gap:.3rem 1.1rem;align-items:baseline;color:var(--soft);margin:1.5rem 0 0}
+.share button{font:inherit;color:var(--link);background:none;border:0;padding:0;text-decoration:underline;cursor:pointer}
+@media (max-width:40rem){.story-stamp .postmark{width:9.5rem;left:-1.6rem;bottom:-1.5rem}}
+@media (min-width:58rem){
+  .story{grid-template-columns:20rem minmax(0,1fr);gap:3.4rem;align-items:start}
+  .story-stamp{position:sticky;top:1.5rem;justify-self:start;margin:1rem 0 0 1.2rem}
+}
+.related,.more-stories{margin:2.6rem 0 0}
+.related h2,.more-stories h2{font-size:1.9rem;margin:0 0 .3rem}
+.related ul,.more-stories ul{padding-left:1.1rem;margin:.3rem 0}
+.related li,.more-stories li{margin:.4rem 0}
+.more-stories li{font-size:1.08rem}
 
 footer.selvage{margin-top:2rem}
 .foot{max-width:72rem;margin:0 auto;padding:1.4rem 1rem 1.8rem;display:flex;flex-wrap:wrap;gap:.4rem 2rem;align-items:baseline}
 .sign{font-family:var(--gothic);font-size:1.7rem;margin:0}
 .foot p{margin:0}
-@media (min-width:44rem){.btn{display:inline-block;padding:1.05rem 3.2rem}}
