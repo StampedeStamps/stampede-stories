@@ -33,9 +33,10 @@ attractive as www.stampedestamps.store, or more so; then test-run Facebook stori
   page and "Share this story" (Facebook, Pinterest, Email, Copy the link: plain links, no scripts from other sites).
 - **Home.** The promise and today's story side by side (the sourced stories take turns, one a day), then "Stories worth
   a read" as a grid that never hides a card, then search, the category pane and the shelf.
-- **Photos stay a switch.** `STORE_PHOTOS = False` in build.py. On Sun 2026-10-11 Douglas chose "Submit, stay text-only
-  meanwhile". Setting it True reads the store's public photo list (www.stampedestamps.store/data/catalog_images.csv,
-  420 of 420 listings) and every photo slot fills, with no other change.
+- **Photos are a switch.** `STORE_PHOTOS` in build.py reads the store's public photo list
+  (www.stampedestamps.store/data/catalog_images.csv, 420 of 420 listings) and every photo slot fills, with no other
+  change. It was OFF under Douglas's 10-11 "Submit, stay text-only meanwhile"; **Douglas turned it ON on Fri 2026-10-16
+  ~7:15 PM ET** ("Turn photos on (Recommended)"), after seeing both versions.
 
 ## Review against the brief (what read as a default, and what changed)
 - A first idea, a "Story of the week" label in tracked capitals over the hero, read as template chrome. Changed to the

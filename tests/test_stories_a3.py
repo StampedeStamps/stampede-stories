@@ -138,6 +138,26 @@ class StoryLayoutTest(unittest.TestCase):
         self.assertIn(f'<a href="{shop}">See it with its photo at stampedestamps.store</a>', p)
         self.assertIn(f'data-url="{build.SITE_URL}/item/701.html"', p)  # sharing points at the story itself
 
+    def test_story_follows_a_corrected_title(self):
+        # Two rows for one item (the title as listed now, and the corrected title): whichever the listing carries wins,
+        # so a title fix on eBay never drops the story or shifts the order of the home cover.
+        fixed = "Scott #C9 1942 Pearl Harbor T.H. Airmail Cover 20c Map I.C.B. Censor 4"
+        old_row = list(STORIES[1])
+        new_row = list(STORIES[1])
+        new_row[1], new_row[2] = fixed, "The corrected-title story, with its 20c Map airmail."
+        p_old = self.read(self.build(stories=[old_row, new_row]), "item/702.html")
+        self.assertIn("Clipper flying boats carried mail", p_old)
+        self.assertNotIn("corrected-title story", p_old)
+        global LISTINGS
+        saved = LISTINGS
+        try:
+            LISTINGS = [r if r[0] != "702" else [r[0], fixed] + r[2:] for r in saved]
+            p_new = self.read(self.build(stories=[old_row, new_row]), "item/702.html")
+        finally:
+            LISTINGS = saved
+        self.assertIn("corrected-title story", p_new)
+        self.assertNotIn("Clipper flying boats carried mail", p_new)
+
     def test_money_in_a_headline_hook_or_fact_stops_the_build(self):
         for col in (4, 5, 6):
             bad = list(STORIES[0])
@@ -164,8 +184,9 @@ class StorePhotosTest(unittest.TestCase):
         with mock.patch.object(build.urllib.request, "urlopen", side_effect=OSError("offline")):
             self.assertEqual(build.store_photos(), {})
 
-    def test_photos_stay_off_until_douglas_says_so(self):
-        self.assertFalse(build.STORE_PHOTOS)
+    def test_photos_on_by_douglas_ruling(self):
+        # Douglas, Fri 2026-10-16 ~7:15 PM ET: "Turn photos on (Recommended)". Turning them off again is his call.
+        self.assertTrue(build.STORE_PHOTOS)
 
 
 if __name__ == "__main__":

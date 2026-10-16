@@ -20,9 +20,10 @@ STORE = "https://www.ebay.com/str/stampedeusa"
 # listing has a page on www.stampedestamps.store names that page as its canonical and links shoppers to it.
 STORE_SITE = "https://www.stampedestamps.store"
 CATALOG = f"{STORE_SITE}/catalog/"
-# Photos from the store's public photo list. OFF: on Sun 2026-10-11 Douglas chose "Submit, stay text-only meanwhile".
-# Set True only on his word; the photo layout then turns on everywhere with no other change.
-STORE_PHOTOS = False
+# Photos from the store's public photo list (www.stampedestamps.store/data/catalog_images.csv). ON by Douglas's clickable
+# "Turn photos on (Recommended)", Fri 2026-10-16 ~7:15 PM ET (it ends his 10-11 "stay text-only meanwhile"). If the store
+# cannot be read, store_photos() returns {} and every page falls back to its printed stamp for that build.
+STORE_PHOTOS = True
 PURPLE = "#4B006E"
 SIGN = "- StampedeUSA"
 SITE_NAME = "Stamp Stories"
