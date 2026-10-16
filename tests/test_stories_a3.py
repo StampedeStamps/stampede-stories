@@ -106,6 +106,14 @@ class StoryLayoutTest(unittest.TestCase):
             self.assertIn(day.strftime("%b").upper(), cover)
         self.assertEqual(seen, {"701", "702"})
 
+    def test_postmark_shows_the_visitors_date(self):
+        out = self.build()
+        for name in ("index.html", "item/701.html"):
+            txt = self.read(out, name)
+            self.assertIn('class="date pm-md"', txt)
+            self.assertIn(build.POSTMARK_JS, txt)                      # the visitor's own date replaces the build date
+        self.assertNotIn(build.POSTMARK_JS, self.read(out, "item/704.html"))   # no postmark, no script
+
     def test_no_sourced_story_falls_back_to_fresh_from_the_shelf(self):
         home = self.read(self.build(stories=[STORIES[2]]), "index.html")
         self.assertNotIn('class="cover"', home)

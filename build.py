@@ -101,8 +101,10 @@ def clip(text, n=200):
 
 
 def postmark(day, uid):
-    """A circular date cancel in brand ink: the site name around the ring, the build date inside, wavy killer bars.
-    Decorative only (aria-hidden); each one on a page needs its own uid for the text path."""
+    """A circular date cancel in brand ink: the site name around the ring, the date inside, wavy killer bars.
+    Decorative only (aria-hidden); each one on a page needs its own uid for the text path. The page prints the build
+    date; POSTMARK_JS then sets the visitor's own date, because the site is rebuilt only on mornings when the
+    listings change (no rebuild on 10-13 or 10-14), and a postmark should never read yesterday."""
     arc = f"pm-{uid}"
     return (f'<svg class="postmark" viewBox="0 0 250 120" aria-hidden="true" focusable="false">'
             f'<defs><path id="{arc}" d="M60 60m-41 0a41 41 0 1 1 82 0a41 41 0 1 1-82 0"/></defs>'
@@ -111,8 +113,14 @@ def postmark(day, uid):
             + "".join(f'<path d="M126 {y}q12-7 24 0t24 0t24 0t24 0t24 0" stroke-width="5"/>' for y in (33, 50, 67, 84))
             + '</g><text class="ring"><textPath href="#' + arc + '" startOffset="1%">'
             'STAMP STORIES &#8226; STAMPEDEUSA &#8226;</textPath></text>'
-            f'<text class="date" x="60" y="57" text-anchor="middle">{e(day.strftime("%b").upper())} {day.day}</text>'
-            f'<text class="date" x="60" y="77" text-anchor="middle">{day.year}</text></svg>')
+            f'<text class="date pm-md" x="60" y="57" text-anchor="middle">{e(day.strftime("%b").upper())} {day.day}</text>'
+            f'<text class="date pm-y" x="60" y="77" text-anchor="middle">{day.year}</text></svg>')
+
+
+POSTMARK_JS = ("<script>(function(){var d=new Date(),m='JAN FEB MAR APR MAY JUN JUL AUG SEP OCT NOV DEC'.split(' ');"
+               "[].forEach.call(document.querySelectorAll('.postmark .pm-md'),function(t){t.textContent=m[d.getMonth()]"
+               "+' '+d.getDate();});[].forEach.call(document.querySelectorAll('.postmark .pm-y'),function(t){"
+               "t.textContent=d.getFullYear();});})();</script>")
 
 
 def stamp_html(r, img, cls="", lazy=True):
@@ -328,7 +336,8 @@ def main(out, data=None, store=None, photos=None, today=None):
                     f'</div></article>{more_stories(it, "")}{related}')
             script = ("<script>(function(){var b=document.getElementById('copy');if(!b||!navigator.clipboard)return;"
                       "b.hidden=false;b.addEventListener('click',function(){navigator.clipboard.writeText("
-                      "b.getAttribute('data-url')).then(function(){b.textContent='Link copied';});});})();</script>")
+                      "b.getAttribute('data-url')).then(function(){b.textContent='Link copied';});});})();</script>"
+                      + POSTMARK_JS)
             title = f"{hl}: {t}{nth} | {SITE_NAME}"
             desc = clip(f"{hl}. {st['hook']} {st['story']}")
             main_class = "story-page"
@@ -458,7 +467,7 @@ if(m)q.value=decodeURIComponent(m[1].replace(/\\+/g,' '));}run(false);});})();
             f'<a href="{STORE}">browse the whole StampedeUSA store on eBay</a>.</p></div></div>'
             f'<nav aria-label="Categories"><ul class="pane">{"".join(tiles)}'
             '<li class="inscription" aria-hidden="true">Mail early in the day</li></ul></nav>'
-            + "".join(secs) + js)
+            + "".join(secs) + js + (POSTMARK_JS if cover else ""))
     site_ld = {"@context": "https://schema.org", "@type": "WebSite", "name": SITE_NAME, "url": f"{SITE_URL}/index.html",
                "publisher": {"@type": "Organization", "name": "StampedeUSA"},
                "potentialAction": {"@type": "SearchAction", "target": f"{SITE_URL}/index.html?q={{search_term_string}}",
