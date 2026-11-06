@@ -30,6 +30,17 @@ class BuildTest(unittest.TestCase):
             self.assertIn("See it on eBay", txt)
             self.assertIn("- StampedeUSA", txt)
 
+    def test_every_page_has_the_visitor_counter_once(self):
+        # Cloudflare Web Analytics (Douglas, Fri 2026-11-06): one beacon on every page, carrying this site's own token.
+        self.assertRegex(build.CF_BEACON_TOKEN, r"^[0-9a-f]{32}$")
+        pages = list(self.out.rglob("*.html"))
+        self.assertGreater(len(pages), len(self.rows))
+        for p in pages:
+            txt = p.read_text(encoding="utf-8")
+            self.assertEqual(txt.count("static.cloudflareinsights.com/beacon.min.js"), 1, p.name)
+            self.assertIn('data-cf-beacon=\'{"token": "%s"}\'' % build.CF_BEACON_TOKEN, txt, p.name)
+            self.assertLess(txt.index("cloudflareinsights"), txt.index("</body>"), p.name)
+
     def test_no_price_outside_titles(self):
         titles = sorted({html.escape(r["title"]) for r in self.rows} | {r["title"] for r in self.rows}, key=len, reverse=True)
         for p in list(self.out.rglob("*.html")) + [self.out / "feed.xml"]:

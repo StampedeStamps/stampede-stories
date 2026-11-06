@@ -136,6 +136,10 @@ class LiveSiteTest(unittest.TestCase):
         self.assertNotRegex(css, r"url\((?:'|\")?https?:")
         for p in self.pages:
             txt = p.read_text(encoding="utf-8")
+            # Self-hosted, with ONE exception: Cloudflare Web Analytics' beacon, the site's visitor counter (Douglas,
+            # Fri 2026-11-06 "Yes, add Cloudflare"). Any other outside script still fails here.
+            txt = re.sub(r"<script type='module' src='https://static\.cloudflareinsights\.com/beacon\.min\.js' "
+                         r"data-cf-beacon='\{\"token\": \"[0-9a-f]{32}\"\}'></script>", "", txt)
             self.assertNotRegex(txt, r"<script[^>]+src=", p.name)
             self.assertNotRegex(txt, r'<link[^>]+href="https?://(?!stampedestamps)[^"]+"[^>]*stylesheet', p.name)
         png = (ROOT / build.OG_DEFAULT).read_bytes()
