@@ -31,6 +31,12 @@ OG_DEFAULT = "assets/og-stamp-stories.png"  # 1200x630, made once by tools/make_
 # Google Search Console ownership proof for the URL-prefix property https://stampedestamps.github.io/stampede-stories/
 # (Douglas, Sun 2026-10-11 "go traffic"). Removing it un-verifies the site, so tests/test_build.py checks it stays.
 GOOGLE_SITE_VERIFICATION = "LLXJ-AdRojWsQOPVel5D4eVxu6o9vwAzJJ_nle-0bQ8"
+# Cloudflare Web Analytics, the site's one visitor counter (Douglas, Fri 2026-11-06: "Yes, add Cloudflare"). Free, sets
+# no cookies; the token is public by design (it is printed in every page) and counts only on stampedestamps.github.io.
+# Empty = no counter on any page. tests/test_build.py checks every page carries it exactly once.
+CF_BEACON_TOKEN = "50dfb39337ca44b8ae9480a9aafc60b6"
+CF_BEACON = (f"<script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' "
+             f"data-cf-beacon='{{\"token\": \"{CF_BEACON_TOKEN}\"}}'></script>\n") if CF_BEACON_TOKEN else ""
 FONT = "assets/fonts/league-gothic-latin-400-normal.woff2"
 DECADE_MIN = 30  # a category this big gets decade sub-headings, taken only from a year the title itself states
 FORMATS = {"FIXED_PRICE": "Buy It Now", "AUCTION": "Auction"}
@@ -170,7 +176,7 @@ def page(title, desc, body, canon, depth=0, base=None, image=None, extra_head=""
 <footer class="selvage"><div class="foot"><p class="sign">{SIGN}</p>
 <p><a href="{STORE}">Visit the StampedeUSA store on eBay</a></p>{cat_foot}
 <p><a href="{pre}feed.xml">New listings by RSS</a></p></div></footer>
-</body></html>
+{CF_BEACON}</body></html>
 """
 
 
